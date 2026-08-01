@@ -19,15 +19,15 @@ impl InfoEdge {
     pub fn new(id: &str, id1: &str, id2: &str) -> Self {
         InfoEdge {
                 descriptor: Descriptor {
-                point: id.to_string(),
+                point: id.into(),
                 ..Default::default()
             },
                 vertex1: Descriptor {
-                point: id1.to_string(),
+                point: id1.into(),
                 ..Default::default()
             },
                 vertex2: Descriptor {
-                point: id2.to_string(),
+                point: id2.into(),
                 ..Default::default()
             },
         }
@@ -39,7 +39,7 @@ impl InfoEdge {
     }
 
     pub fn does_refer(&self, id: &str) -> bool {
-        if self.vertex1.point == id || self.vertex2.point == id {
+        if &*self.vertex1.point == id || &*self.vertex2.point == id {
             return true
         }
         false
@@ -51,9 +51,9 @@ impl InfoEdge {
 
     pub fn get_point_from_label(&self, label: &str) -> Vec<String>{
         let mut result: Vec<String> = Vec::new();
-        if self.descriptor.label == label {result.push(self.descriptor.point.to_string());}
-        if self.vertex1.label == label {result.push(self.vertex1.point.to_string());}
-        if self.vertex2.label == label {result.push(self.vertex2.point.to_string());}
+        if self.descriptor.label.as_deref() == Some(label) {result.push(self.descriptor.point.to_string());}
+        if self.vertex1.label.as_deref() == Some(label) {result.push(self.vertex1.point.to_string());}
+        if self.vertex2.label.as_deref() == Some(label) {result.push(self.vertex2.point.to_string());}
         result
     }
 
@@ -92,9 +92,9 @@ impl InfoEdge {
 
     #[allow(dead_code)]
     pub fn get_label(&self, id: &str) -> &str {
-            if id == self.vertex1.point  { return self.vertex1.label.as_str(); }
-            if id == self.vertex2.point  { return self.vertex2.label.as_str(); }
-            if id == self.descriptor.point  { return self.descriptor.label.as_str(); }
+            if id == &*self.vertex1.point  { return self.vertex1.label.as_deref().unwrap_or(""); }
+            if id == &*self.vertex2.point  { return self.vertex2.label.as_deref().unwrap_or(""); }
+            if id == &*self.descriptor.point  { return self.descriptor.label.as_deref().unwrap_or(""); }
             else {"N/A"} //TODO: Make an error, use Result I guess...
     }
 
@@ -103,15 +103,15 @@ impl InfoEdge {
 
         let mut edge_copy:InfoEdge = self.clone();
         match &mut edge_copy {
-            InfoEdge{descriptor,..} if descriptor.point == *obj_id.to_string()
+            InfoEdge{descriptor,..} if &*descriptor.point == obj_id
                 => {self.set_label(new_label);},
-            
-            InfoEdge{vertex1,..} if vertex1.point == *obj_id.to_string()
-                => {self.set_label_vertex1(new_label);},  
-            
-            InfoEdge{vertex2,..} if vertex2.point == *obj_id.to_string() 
-                => {self.set_label_vertex2(new_label);},  
-            
+
+            InfoEdge{vertex1,..} if &*vertex1.point == obj_id
+                => {self.set_label_vertex1(new_label);},
+
+            InfoEdge{vertex2,..} if &*vertex2.point == obj_id
+                => {self.set_label_vertex2(new_label);},
+
             _ => {println!("This is fine!")},
         }
     }
@@ -153,18 +153,15 @@ impl From<InfoTriple> for InfoEdge {
     fn from(triple: InfoTriple) -> Self {
         InfoEdge {
             descriptor: Descriptor{
-                point: triple.id,
-                label: String::new(),
+                point: triple.id.into(),
                 ..Default::default()
             },
             vertex1: Descriptor{
-                point: triple.id1,
-                label: String::new(),
+                point: triple.id1.into(),
                 ..Default::default()
             },
             vertex2: Descriptor{
-                point: triple.id2,
-                label: String::new(),
+                point: triple.id2.into(),
                 ..Default::default()
             }
 
@@ -195,9 +192,9 @@ impl ToOneString for InfoEdge {
     fn to_one_string (&self) -> String {
         let mut one_string = String::new();
         one_string.push_str(&InfoTriple::from(self.clone()).to_one_string());
-        one_string.push_str(&self.descriptor.name);
-        one_string.push_str(&self.descriptor.label);
-        one_string.push_str(&self.descriptor.description);
+        one_string.push_str(self.descriptor.name.as_deref().unwrap_or(""));
+        one_string.push_str(self.descriptor.label.as_deref().unwrap_or(""));
+        one_string.push_str(self.descriptor.description.as_deref().unwrap_or(""));
         one_string 
     }
 }
@@ -205,9 +202,9 @@ impl ToOneString for InfoEdge {
 impl From<InfoEdge> for InfoTriple {
     fn from(triple: InfoEdge) -> Self {
         InfoTriple {
-            id: triple.descriptor.point,
-            id1: triple.vertex1.point,
-            id2: triple.vertex2.point,
+            id: triple.descriptor.point.to_string(),
+            id1: triple.vertex1.point.to_string(),
+            id2: triple.vertex2.point.to_string(),
         }
     }
 }

@@ -2,10 +2,11 @@
 use std::collections::HashMap;
 
 use crate::edge_director::EdgeDirector;
-use ig_desc::descriptor_store_fs::DescriptorStoreFS; 
+use ig_desc::descriptor_store_fs::DescriptorStoreFS;
 use ig_desc::descriptor_facade::DescriptorFacade;
-use ig_tr::triple_store_fs::TripleStoreFS; 
-use ig_tr::triple_facade::TripleFacade; 
+use ig_desc::{App, Space};
+use ig_tr::triple_store_fs::TripleStoreFS;
+use ig_tr::triple_facade::TripleFacade;
 
 #[derive(Clone)]
 pub struct EdgeServiceFS {
@@ -14,18 +15,20 @@ pub struct EdgeServiceFS {
 }
 
 impl EdgeServiceFS {
-    pub fn new(space_id: String) -> Self {
-        
-        let triples: TripleStoreFS = TripleStoreFS::new(space_id.clone());
+    pub fn new(app_name: App, space_id: Space, config: String) -> Self {
+
+        let space_id_string = space_id.to_string();
+
+        let triples: TripleStoreFS = TripleStoreFS::new(space_id_string.clone());
         let triple_facade = TripleFacade{ storage: triples};
 
-        let descs = DescriptorStoreFS::new(space_id.clone());
+        let descs = DescriptorStoreFS::new(app_name, space_id, config);
         let desc_facade = DescriptorFacade::new(descs);
 
         EdgeServiceFS {
             edges: EdgeDirector::new(triple_facade, desc_facade),
-            space_id: space_id.clone(),
-        }    
+            space_id: space_id_string,
+        }
     }
 
     ///

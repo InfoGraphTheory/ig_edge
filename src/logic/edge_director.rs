@@ -24,7 +24,7 @@ impl<T:TripleStore, S:DescriptorStore> EdgeDirector<T,S> {
                 
                 let descs = self.descs.get_descs(vec);
 
-                descs.iter().enumerate().map(|(c,d)| format!("{}: {} {} {} {}\n",c, d.point, d.name, d.label, d.description))
+                descs.iter().enumerate().map(|(c,d)| format!("{}: {} {} {} {}\n",c, d.point, d.name.as_deref().unwrap_or(""), d.label.as_deref().unwrap_or(""), d.description.as_deref().unwrap_or("")))
                             .reduce(|mut result, var| { result.push_str(&var); result}).unwrap()
     }
 
@@ -38,14 +38,11 @@ impl<T:TripleStore, S:DescriptorStore> EdgeDirector<T,S> {
     //- then in director pair id with desc.name or else id and return.
         descs
             .iter_mut()
-            .map(|x| { 
-                let mut name = x.name.clone(); 
-                if x.name.is_empty() {
-                    name = x.point.clone()
-                } 
-                (x.point.clone(), name.clone())
+            .map(|x| {
+                let name = x.name.as_deref().map(|s| s.to_string()).unwrap_or_else(|| x.point.to_string());
+                (x.point.to_string(), name)
             })
-            .collect() 
+            .collect()
     }
 
     pub fn get_all_ref_edge_names_except(&mut self, graph_name: String, ref_id: String, exception: String) -> HashMap<Point,NameOrPoint> {
@@ -68,15 +65,12 @@ impl<T:TripleStore, S:DescriptorStore> EdgeDirector<T,S> {
     //- then in director pair id with desc.name or else id and return.
         descs
             .iter_mut()
-            .filter(|x| x.point != ref_id) 
-            .map(|x| { 
-                let mut name = x.name.clone(); 
-                if x.name.is_empty() {
-                    name = x.point.clone()
-                } 
-                (x.point.clone(), name.clone())
+            .filter(|x| x.point.0 != ref_id)
+            .map(|x| {
+                let name = x.name.as_deref().map(|s| s.to_string()).unwrap_or_else(|| x.point.to_string());
+                (x.point.to_string(), name)
             })
-            .collect() 
+            .collect()
     }
 
 
@@ -87,13 +81,10 @@ impl<T:TripleStore, S:DescriptorStore> EdgeDirector<T,S> {
         let mut descs = self.descs.get_descs_or_else_ids(triple_ids);
         descs
             .iter_mut()
-            .map(|x| { 
-                let mut label = x.label.clone(); 
-                if x.label.is_empty() {
-                    label = x.point.clone()
-                } 
-                (x.point.clone(), label.clone())
+            .map(|x| {
+                let label = x.label.as_deref().map(|s| s.to_string()).unwrap_or_else(|| x.point.to_string());
+                (x.point.to_string(), label)
             })
-            .collect() 
+            .collect()
     }
 }
