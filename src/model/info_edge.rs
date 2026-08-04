@@ -4,8 +4,7 @@ use ig_desc::Descriptor;
 use super::info_graph::ToOneString;
 
 
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 #[allow(dead_code)]
 pub struct InfoEdge {
     pub descriptor: Descriptor, 
@@ -94,25 +93,20 @@ impl InfoEdge {
     pub fn get_label(&self, id: &str) -> &str {
             if id == &*self.vertex1.point  { return self.vertex1.label.as_deref().unwrap_or(""); }
             if id == &*self.vertex2.point  { return self.vertex2.label.as_deref().unwrap_or(""); }
-            if id == &*self.descriptor.point  { return self.descriptor.label.as_deref().unwrap_or(""); }
+            if id == &*self.descriptor.point  { self.descriptor.label.as_deref().unwrap_or("") }
             else {"N/A"} //TODO: Make an error, use Result I guess...
     }
 
     #[allow(dead_code)]
     pub fn set_label_for_id(&mut self, new_label: &str, obj_id: &str) {
-
-        let mut edge_copy:InfoEdge = self.clone();
-        match &mut edge_copy {
-            InfoEdge{descriptor,..} if &*descriptor.point == obj_id
-                => {self.set_label(new_label);},
-
-            InfoEdge{vertex1,..} if &*vertex1.point == obj_id
-                => {self.set_label_vertex1(new_label);},
-
-            InfoEdge{vertex2,..} if &*vertex2.point == obj_id
-                => {self.set_label_vertex2(new_label);},
-
-            _ => {println!("This is fine!")},
+        if &*self.descriptor.point == obj_id {
+            self.set_label(new_label);
+        } else if &*self.vertex1.point == obj_id {
+            self.set_label_vertex1(new_label);
+        } else if &*self.vertex2.point == obj_id {
+            self.set_label_vertex2(new_label);
+        } else {
+            println!("This is fine!");
         }
     }
 
@@ -167,25 +161,6 @@ impl From<InfoTriple> for InfoEdge {
 
         }
     }
-}
-
-impl Clone for InfoEdge{ 
-    fn clone(&self) -> Self {
-        InfoEdge{
-            descriptor: self.descriptor.clone(),
-            vertex1: self.vertex1.clone(),
-            vertex2: self.vertex2.clone(),
-        } 
-    } 
-}
-
-#[allow(dead_code)]
-pub(crate) fn mock() -> InfoEdge {
-    InfoEdge {
-        descriptor: Descriptor::mock_with_id("edge vertex"),
-        vertex1: Descriptor::mock_with_id("vertex1"),
-        vertex2: Descriptor::mock_with_id("vertex2"),
-    } 
 }
 
 impl ToOneString for InfoEdge {

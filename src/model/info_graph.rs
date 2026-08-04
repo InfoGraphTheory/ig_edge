@@ -40,15 +40,11 @@ impl InfoGraph {
     }
 
     pub fn get_refering_edges(&self, id: &str) -> Vec<InfoEdge> {
-        let mut refers = vec![]; 
-        let iterator = self.edges.iter();
-        let mut iterator = iterator.map(|(_key, value)| value).collect::<Vec<_>>();
-        for info_edge in &mut iterator{
-            if info_edge.does_refer(id) { 
-                refers.push(info_edge.clone());
-            }
-        }
-        refers
+        self.edges
+            .values()
+            .filter(|info_edge| info_edge.does_refer(id))
+            .cloned()
+            .collect()
     }
 
     pub fn add_info_edge(&mut self, info_edge: InfoEdge) -> &mut InfoEdge {
@@ -67,15 +63,13 @@ impl InfoGraph {
     //vertex2 based on edge id, same set functions based on descriptor id.
 
     pub fn set_description(&mut self, id: &str, description: &str) -> Result<(), InfoGraphError>{
-        let mut edge = self.get_info_edge(id);
-        if let Some(e) = &mut edge {
-            let mut e2 = e.clone();
-            e2.descriptor.set_description(description);
-            self.edges.insert(id.to_string(), e.clone());
-            return Ok(());
-        }
-
-        Err(InfoGraphError)
+        let Some(edge) = self.get_info_edge(id) else {
+            return Err(InfoGraphError);
+        };
+        let mut edge = edge.clone();
+        edge.descriptor.set_description(description);
+        self.edges.insert(id.to_string(), edge);
+        Ok(())
     }
 
 
@@ -139,7 +133,7 @@ impl From<InfoGraph> for InfoTable {
         let mut rows: HashMap<String,(String,String)> = HashMap::new();
         //let mut rows: Vec<InfoTriple> = vec!();
         
-        for (_key, info_edge) in &graph.edges{
+        for info_edge in graph.edges.values() {
             let triple: InfoTriple = InfoTriple::from(info_edge.clone());
             rows.insert(triple.id, (triple.id1, triple.id2));
         }

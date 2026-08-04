@@ -25,7 +25,7 @@ impl<T:TripleStore, S:DescriptorStore> EdgeDirector<T,S> {
                 let descs = self.descs.get_descs(vec);
 
                 descs.iter().enumerate().map(|(c,d)| format!("{}: {} {} {} {}\n",c, d.point, d.name.as_deref().unwrap_or(""), d.label.as_deref().unwrap_or(""), d.description.as_deref().unwrap_or("")))
-                            .reduce(|mut result, var| { result.push_str(&var); result}).unwrap()
+                            .collect::<String>()
     }
 
     pub fn get_all_edge_names(&mut self) -> HashMap<Point,NameOrPoint> {
@@ -45,7 +45,7 @@ impl<T:TripleStore, S:DescriptorStore> EdgeDirector<T,S> {
             .collect()
     }
 
-    pub fn get_all_ref_edge_names_except(&mut self, graph_name: String, ref_id: String, exception: String) -> HashMap<Point,NameOrPoint> {
+    pub fn get_all_ref_edge_names_except(&mut self, _graph_name: String, ref_id: String, exception: String) -> HashMap<Point,NameOrPoint> {
         
         let infotable_name = "main_table";
 
