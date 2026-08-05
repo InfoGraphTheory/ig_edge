@@ -51,7 +51,7 @@ impl<T:TripleStore, S:DescriptorStore> EdgeDirector<T,S> {
 
         let infotable: InfoTable = self.triples.get_info_table_as_info_table(infotable_name);
 
-        let triple_ids: Vec<String> = infotable.get_neighbor_ids_except(ref_id.clone(), exception.clone());
+        let triple_ids: Vec<String> = infotable.get_neighbor_ids_except(&ref_id, &exception);
 
 //println!("all triple_ids********************************");    
         triple_ids
