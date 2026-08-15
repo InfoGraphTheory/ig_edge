@@ -52,3 +52,21 @@ impl EdgeServiceFS {
         self.edges.get_all_ref_edge_labels(ref_id)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Guards the App/Space/config constructor signature (a breaking change made this session
+    // to match DescriptorStoreFS::new) against accidental regression.
+    #[test]
+    fn new_constructs_successfully_with_app_space_and_config() {
+        let space_id = format!("ig_edge_test_service_{}", std::process::id());
+        let service = EdgeServiceFS::new(
+            App::from("ig_edge_test_app".to_string()),
+            Space::from(space_id.clone()),
+            "ig_edge_test_config".to_string(),
+        );
+        assert_eq!(service.space_id, space_id);
+    }
+}

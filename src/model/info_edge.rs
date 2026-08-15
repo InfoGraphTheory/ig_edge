@@ -183,3 +183,71 @@ impl From<InfoEdge> for InfoTriple {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn does_refer_true_for_either_vertex_false_otherwise() {
+        let edge = InfoEdge::new("e1", "a", "b");
+        assert!(edge.does_refer("a"));
+        assert!(edge.does_refer("b"));
+        assert!(!edge.does_refer("e1"));
+        assert!(!edge.does_refer("c"));
+    }
+
+    #[test]
+    fn get_point_from_label_matches_any_of_the_three_descriptors() {
+        let mut edge = InfoEdge::new("e1", "a", "b");
+        edge.set_label("edge-label");
+        edge.set_label_vertex1("v1-label");
+
+        assert_eq!(edge.get_point_from_label("edge-label"), vec!["e1".to_string()]);
+        assert_eq!(edge.get_point_from_label("v1-label"), vec!["a".to_string()]);
+        assert!(edge.get_point_from_label("no-such-label").is_empty());
+    }
+
+    #[test]
+    fn set_label_for_id_updates_only_the_matching_part() {
+        let mut edge = InfoEdge::new("e1", "a", "b");
+
+        edge.set_label_for_id("edge-label", "e1");
+        assert_eq!(edge.get_label("e1"), "edge-label");
+        assert_eq!(edge.get_label("a"), "");
+
+        edge.set_label_for_id("v1-label", "a");
+        assert_eq!(edge.get_label("a"), "v1-label");
+
+        edge.set_label_for_id("v2-label", "b");
+        assert_eq!(edge.get_label("b"), "v2-label");
+
+        // No matching id: leaves the edge unchanged and does not panic.
+        edge.set_label_for_id("ignored", "no-such-id");
+        assert_eq!(edge.get_label("e1"), "edge-label");
+    }
+
+    #[test]
+    fn get_label_falls_back_to_n_a_for_an_unknown_id() {
+        let edge = InfoEdge::new("e1", "a", "b");
+        assert_eq!(edge.get_label("unknown"), "N/A");
+    }
+
+    #[test]
+    fn to_one_string_includes_descriptor_fields() {
+        let mut edge = InfoEdge::new("e1", "a", "b");
+        edge.set_label("my-label");
+        assert!(edge.to_one_string().contains("my-label"));
+    }
+
+    #[test]
+    fn from_info_triple_round_trips_through_info_edge() {
+        let triple = InfoTriple::new("e1", "a", "b");
+        let edge: InfoEdge = triple.clone().into();
+        let back: InfoTriple = edge.into();
+
+        assert_eq!(back.id, triple.id);
+        assert_eq!(back.id1, triple.id1);
+        assert_eq!(back.id2, triple.id2);
+    }
+}

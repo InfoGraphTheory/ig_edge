@@ -88,3 +88,76 @@ impl<T:TripleStore, S:DescriptorStore> EdgeDirector<T,S> {
             .collect()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use ig_desc::{App, Space, Descriptor, descriptor_store_fs::DescriptorStoreFS};
+    use ig_tr::{triple_store_fs::TripleStoreFS, InfoTriple};
+
+    // These tests exercise EdgeDirector against real filesystem-backed stores (TripleStoreFS +
+    // DescriptorStoreFS), covering the general pairing pattern this crate is meant to support:
+    // pair ids together via triples, give some of them descriptors separately, then query
+    // names/labels for paired items through the director, relying on its fallback-to-point
+    // behavior for ids that were never given a descriptor. Each test uses a space id unique to
+    // this process run so repeated runs never see stale data from a previous run.
+
+    fn new_director(space_id: &str) -> EdgeDirector<TripleStoreFS, DescriptorStoreFS> {
+        let triples = TripleFacade::new(TripleStoreFS::new(space_id.to_string()));
+        let descs = DescriptorFacade::new(DescriptorStoreFS::new(
+            App::from("ig_edge_test_app".to_string()),
+            Space::from(space_id.to_string()),
+            "ig_edge_test_config".to_string(),
+        ));
+        EdgeDirector::new(triples, descs)
+    }
+
+    #[test]
+    fn get_all_edge_names_falls_back_to_point_when_no_descriptor_exists() {
+        let space_id = format!("ig_edge_test_names_{}", std::process::id());
+        let mut director = new_director(&space_id);
+        director.triples.clear_infotable("main_table".to_string());
+
+        // "widget-1" is tagged with a category and has a descriptor with a name.
+        director.triples.add_to_infotable("main_table".to_string(), InfoTriple::new("t1", "widget-1", "cat-tag"));
+        director.descs.add_desc_n_index(Descriptor { point: "widget-1".into(), name: Some("Widget One".into()), ..Default::default() });
+
+        // "widget-2" is tagged the same way but was never given a descriptor.
+        director.triples.add_to_infotable("main_table".to_string(), InfoTriple::new("t2", "widget-2", "cat-tag"));
+
+        let names = director.get_all_edge_names();
+
+        assert_eq!(names.get("widget-1").map(String::as_str), Some("Widget One"));
+        assert_eq!(names.get("widget-2").map(String::as_str), Some("widget-2"));
+    }
+
+    #[test]
+    fn get_all_ref_edge_names_except_excludes_the_given_exception() {
+        let space_id = format!("ig_edge_test_refs_{}", std::process::id());
+        let mut director = new_director(&space_id);
+        director.triples.clear_infotable("main_table".to_string());
+
+        director.triples.add_to_infotable("main_table".to_string(), InfoTriple::new("t1", "cat-tag", "widget-1"));
+        director.triples.add_to_infotable("main_table".to_string(), InfoTriple::new("t2", "cat-tag", "widget-2"));
+
+        let refs = director.get_all_ref_edge_names_except("unused".to_string(), "cat-tag".to_string(), "widget-1".to_string());
+
+        assert!(refs.contains_key("widget-2"));
+        assert!(!refs.contains_key("widget-1"));
+        assert!(!refs.contains_key("cat-tag"));
+    }
+
+    #[test]
+    fn get_all_ref_edge_labels_falls_back_to_point_when_no_label_exists() {
+        let space_id = format!("ig_edge_test_labels_{}", std::process::id());
+        let mut director = new_director(&space_id);
+        director.triples.clear_infotable("main_table".to_string());
+
+        director.triples.add_to_infotable("main_table".to_string(), InfoTriple::new("t1", "cat-tag", "widget-1"));
+        director.descs.add_desc_n_index(Descriptor { point: "widget-1".into(), label: Some("Widget Label".into()), ..Default::default() });
+
+        let labels = director.get_all_ref_edge_labels("cat-tag".to_string());
+
+        assert_eq!(labels.get("widget-1").map(String::as_str), Some("Widget Label"));
+    }
+}
